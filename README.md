@@ -132,15 +132,6 @@ streamlit run app.py
 
 ---
 
-# 👩‍💻 Developers
-
-* **Lohitha** – 24MIC7274
-* **Divya** – 22MIC7157
-* **Satya Sahithi** – 22MIC7064
-
-VIT-AP University
-
----
 
 # ⚠ Disclaimer
 
