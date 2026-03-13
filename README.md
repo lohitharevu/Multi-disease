@@ -3,9 +3,9 @@
 ### Smart AI Healthcare Disease Prediction System
 
 MediMind AI is an intelligent healthcare web application that predicts possible diseases based on user-selected symptoms using Machine Learning.
-The system also provides **confidence levels**, **diet recommendations**, and **personal prediction history** for users.
+The system also provides **confidence levels**, **food recommendations**, and **prediction history** for users.
 
-This project was developed as part of an academic project at **VIT-AP University**.
+This project was developed as part of an academic project.
 
 ---
 
