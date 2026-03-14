@@ -3,7 +3,7 @@ import numpy as np
 import joblib
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 st.set_page_config(
     page_title="MediMind AI",
@@ -11,10 +11,13 @@ st.set_page_config(
     layout="wide"
 )
 
-
+# ---------------- LOAD MODEL ----------------
 model = joblib.load("disease_model.pkl")
 label_encoder = joblib.load("label_encoder.pkl")
 symptom_columns = joblib.load("symptom_columns.pkl")
+
+# ---------------- IST TIME ----------------
+IST = timezone(timedelta(hours=5, minutes=30))
 
 # ---------------- DATABASE ----------------
 USER_FILE = "users.json"
@@ -56,15 +59,17 @@ food_recommendations = {
 "Jaundice":{"eat":["Fresh fruits","Vegetable soup"],"avoid":["Oily food","Alcohol"]}
 }
 
-
+# ---------------- SESSION ----------------
 if "page" not in st.session_state:
     st.session_state.page="landing"
 
 if "user" not in st.session_state:
     st.session_state.user=None
 
+# ---------------- UI STYLE ----------------
 st.markdown("""
 <style>
+
 body{
 background-color:#0e1117;
 color:white;
@@ -106,6 +111,7 @@ padding:10px 30px;
 font-size:16px;
 color:white;
 }
+
 </style>
 """,unsafe_allow_html=True)
 
@@ -121,27 +127,27 @@ if st.session_state.page=="landing":
     </div>
     """,unsafe_allow_html=True)
 
-    col1,col2,col3=st.columns([2,1,2])
+    col1,col2,col3 = st.columns([2,1,2])
 
     with col2:
         if st.button("🚀 Get Started"):
             st.session_state.page="login"
             st.rerun()
 
-# ---------------- LOGIN PAGE ----------------
+# ---------------- LOGIN ----------------
 elif st.session_state.page=="login":
 
     st.title("🔐 Login")
 
-    username=st.text_input("Username")
-    password=st.text_input("Password",type="password")
+    username = st.text_input("Username")
+    password = st.text_input("Password",type="password")
 
-    col1,col2=st.columns(2)
+    col1,col2 = st.columns(2)
 
     with col1:
         if st.button("Login"):
 
-            users=load_users()
+            users = load_users()
 
             if username in users and users[username]==password:
 
@@ -157,17 +163,17 @@ elif st.session_state.page=="login":
             st.session_state.page="register"
             st.rerun()
 
-# ---------------- REGISTER PAGE ----------------
+# ---------------- REGISTER ----------------
 elif st.session_state.page=="register":
 
     st.title("📝 Register")
 
-    new_user=st.text_input("Create Username")
-    new_pass=st.text_input("Create Password",type="password")
+    new_user = st.text_input("Create Username")
+    new_pass = st.text_input("Create Password",type="password")
 
     if st.button("Create Account"):
 
-        users=load_users()
+        users = load_users()
 
         if new_user in users:
             st.warning("User already exists")
@@ -177,7 +183,6 @@ elif st.session_state.page=="register":
             save_users(users)
 
             st.success("Account created")
-
             st.session_state.page="login"
             st.rerun()
 
@@ -187,7 +192,7 @@ elif st.session_state.page=="dashboard":
     st.title("🩺 MediMind AI")
     st.write(f"Welcome **{st.session_state.user}** 👋")
 
-    menu=st.sidebar.selectbox(
+    menu = st.sidebar.selectbox(
         "Navigation",
         ["Disease Prediction","Past History","Developer Panel","Logout"]
     )
@@ -197,7 +202,7 @@ elif st.session_state.page=="dashboard":
 
         st.subheader("🤒 Select Symptoms")
 
-        selected_symptoms=st.multiselect("Choose symptoms",symptom_columns)
+        selected_symptoms = st.multiselect("Choose symptoms",symptom_columns)
 
         if st.button("🔍 Predict Disease"):
 
@@ -206,24 +211,31 @@ elif st.session_state.page=="dashboard":
 
             else:
 
-                input_vector=np.zeros(len(symptom_columns))
+                input_vector = np.zeros(len(symptom_columns))
 
                 for symptom in selected_symptoms:
-                    input_vector[symptom_columns.index(symptom)]=1
+                    input_vector[symptom_columns.index(symptom)] = 1
 
-                probabilities=model.predict_proba([input_vector])[0]
+                probabilities = model.predict_proba([input_vector])[0]
 
-                top3=np.argsort(probabilities)[-3:][::-1]
+                top3 = np.argsort(probabilities)[-3:][::-1]
 
                 st.subheader("🧠 Predicted Diseases")
 
-                history=load_history()
-                user=st.session_state.user
+                history = load_history()
+                user = st.session_state.user
+
+                highest_disease=None
+                highest_confidence=0
 
                 for i in top3:
 
-                    disease=label_encoder.inverse_transform([i])[0]
-                    confidence=probabilities[i]*100
+                    disease = label_encoder.inverse_transform([i])[0]
+                    confidence = probabilities[i]*100
+
+                    if confidence > highest_confidence:
+                        highest_confidence = confidence
+                        highest_disease = disease
 
                     st.markdown(f"""
                     <div class="prediction-card">
@@ -241,11 +253,12 @@ elif st.session_state.page=="dashboard":
 
                     st.markdown("</div>",unsafe_allow_html=True)
 
+                # SAVE ONLY HIGHEST CONFIDENCE DISEASE
                 record={
                 "symptoms":selected_symptoms,
-                "prediction":disease,
-                "confidence":round(confidence,2),
-                "date":datetime.now().strftime("%Y-%m-%d %H:%M")
+                "prediction":highest_disease,
+                "confidence":round(highest_confidence,2),
+                "date":datetime.now(IST).strftime("%Y-%m-%d %H:%M")
                 }
 
                 history.setdefault(user,[]).append(record)
@@ -296,7 +309,6 @@ elif st.session_state.page=="dashboard":
         st.session_state.page="landing"
 
         st.success("Logged out successfully")
-
         st.rerun()
 
 # ---------------- FOOTER ----------------
