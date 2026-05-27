@@ -8,6 +8,9 @@ The system also provides **confidence levels**, **food recommendations**, and **
 This project was developed as part of an academic project.
 
 ---
+## Live demo
+
+[Launch Streamlit App](https://multi-disease-lohitharevu.streamlit.app/)
 
 # 🚀 Features
 
